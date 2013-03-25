@@ -1,0 +1,9 @@
+#!/bin/bash
+
+n=$1
+read -p "Enter a word: " word
+while test $n -gt 0
+do
+  echo $word
+  n=$((n-1))
+done

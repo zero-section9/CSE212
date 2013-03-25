@@ -1,0 +1,9 @@
+#!/bin/bash
+
+echo -n "The number $1 is "
+if test $(($1 % 2)) -eq 0
+then
+  echo "even"
+else
+  echo "odd"
+fi

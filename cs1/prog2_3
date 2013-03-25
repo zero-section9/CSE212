@@ -1,0 +1,10 @@
+#!/bin/bash
+
+NUM=$1
+REV=0
+while [ $NUM -gt 0 ]
+do
+  REV=$((REV * 10 + NUM % 10))
+  NUM=$((NUM / 10))
+done
+echo "The reverse of $1 is $REV"
