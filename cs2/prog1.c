@@ -1,109 +1,136 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<pthread.h>
+//
+//  prog2_2.c
+//
+//  Created by Abhishek Munie on 24/03/13.
+//  Copyright (c) 2013 AbhishekMunie. All rights reserved.
+//
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+#define BUF_SIZE 1000
 
 typedef struct {
-  int count;
-  pthread_mutex_t mutex;
+    int count;
+    pthread_mutex_t mutex;
+    pthread_cond_t condition_var;
 } Semaphore;
 
-void *startPA();
-void *startPB();
-void *startPC();
-void *startC();
+pthread_mutex_t mutexP = PTHREAD_MUTEX_INITIALIZER;
 
-void wait(Semaphore *s)  {
-    if(s->count <= 0) {
-        pthread_mutex_lock(&(s->mutex));
+Semaphore siA =  {0,        PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
+Semaphore siB =  {0,        PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
+Semaphore siiB = {0,        PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
+Semaphore siiC = {0,        PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
+Semaphore siii = {0,        PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
+Semaphore sP =   {BUF_SIZE, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
+Semaphore sC =   {0,        PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
+
+char buf[BUF_SIZE];
+int ri = 0;
+int wi = 0;
+
+/*
+void waitSemaphore(Semaphore *s) {
+    if (s->count >= 0) {
+        s->count--;
     }
-    s->count--;
+    while(s->count < 0);
 }
-
-void signal(Semaphore *s) {
+void signalSemaphore(Semaphore *s) {
     s->count++;
-    if(s->count > 0) {
-        pthread_mutex_unlock(&(s->mutex));
+}*/
+
+void waitSemaphore(Semaphore *s) {
+    pthread_mutex_lock(&(s->mutex));
+    if (s->count >= 0) {
+        s->count--;
+    }
+    if (s->count < 0) {
+        pthread_cond_wait(&(s->condition_var), &(s->mutex));
+    }
+    pthread_mutex_unlock(&(s->mutex));
+}
+void signalSemaphore(Semaphore *s) {
+    pthread_mutex_lock(&(s->mutex));
+    s->count++;
+    if (s->count >= 0) {
+        pthread_cond_signal(&(s->condition_var));
+    }
+    pthread_mutex_unlock(&(s->mutex));
+}
+
+void produce(char ch) {
+    pthread_mutex_lock(&mutexP);
+    waitSemaphore(&sP);
+    buf[wi++] = ch;
+    wi %= BUF_SIZE;
+    signalSemaphore(&sC);
+    pthread_mutex_unlock(&mutexP);
+}
+
+void *runPA() {
+    produce('A');
+    signalSemaphore(&siA);
+    signalSemaphore(&siii);
+    while (1) {
+        produce('A');
+        signalSemaphore(&siii);
     }
 }
 
-Semaphore si = {-1, PTHREAD_MUTEX_INITIALIZER};
-Semaphore siib = {1, PTHREAD_MUTEX_INITIALIZER};
-Semaphore siic = {0, PTHREAD_MUTEX_INITIALIZER};
-Semaphore siii = {0, PTHREAD_MUTEX_INITIALIZER};
-Semaphore sC = {0, PTHREAD_MUTEX_INITIALIZER};
-
-char buffer[1024];
-int br;
-int bw;
-void write(char ch) {
-    buffer[bw] = ch;
-    signal(&sC);
-    bw = (bw + 1) % 1024;
+void *runPB() {
+    waitSemaphore(&siii);
+    produce('B');
+    signalSemaphore(&siB);
+    signalSemaphore(&siiC);
+    while (1) {
+        waitSemaphore(&siiB);
+        waitSemaphore(&siii);
+        produce('B');
+        signalSemaphore(&siiC);
+    }
 }
 
-int main() {
-    pthread_t tPA, tPB, tPC, tC;
-    int retPA, retPB, retPC, retC;
-    
-    
-    if(retPA = pthread_create(&tPA, NULL, startPA, NULL)) {
-        printf("Thread PA creation failed: %d", retPA);
+void *runPC() {
+    waitSemaphore(&siA);
+    waitSemaphore(&siB);
+    while (1) {
+        waitSemaphore(&siiC);
+        waitSemaphore(&siii);
+        produce('C');
+        signalSemaphore(&siiB);
     }
-    if(retPB = pthread_create(&tPB, NULL, startPB, NULL)) {
-        printf("Thread PA creation failed: %d", retPB);
+}
+
+void *runC() {
+    while (1) {
+        waitSemaphore(&sC);
+        putchar(buf[ri++]);
+        ri %= BUF_SIZE;
+        signalSemaphore(&sP);
     }
-    if(retPC = pthread_create(&tPC, NULL, startPC, NULL)) {
-        printf("Thread PA creation failed: %d", retPC);
+}
+
+int main(int argc, const char * argv[]) {
+    int rPA, rPB, rPC, rC;
+    pthread_t threadPA, threadPB, threadPC, threadC;
+    if ((rPB=pthread_create(&threadPB, NULL, runPB, NULL))) {
+        printf("ThreadPB creation failed: %d\n", rPB);
     }
-    if(retC = pthread_create(&tC, NULL, startC, NULL)) {
-        printf("Thread PA creation failed: %d", retC);
+    if ((rC=pthread_create(&threadC, NULL, runC, NULL))) {
+        printf("ThreadC creation failed: %d\n", rC);
     }
-    printf("The thread returns: %d", ret);
-    pthread_join(tPA, NULL);
-    pthread_join(tPB, NULL);
-    pthread_join(tPC, NULL);
-    pthread_join(tC, NULL);
+    if ((rPC=pthread_create(&threadPC, NULL, runPC, NULL))) {
+        printf("ThreadPC creation failed: %d\n", rPC);
+    }
+    if ((rPA=pthread_create(&threadPA, NULL, runPA, NULL))) {
+       printf("ThreadPA creation failed: %d\n", rPA);
+    }
+    pthread_join(threadPA, NULL);
+    pthread_join(threadPB, NULL);
+    pthread_join(threadPC, NULL);
+    pthread_join(threadC, NULL);
     return 0;
-}
-
-void *startPA() {
-    write('a');
-    signal(&si);
-    signal(&siii);
-    while (true) {
-        write('a');
-        signal(&siii);
-    }
-}
-
-void *startPB() {
-    wait(&siii);
-    write('b');
-    wait(&siib);
-    signal(&si);
-    signal(&siic);
-    while (true) {
-        wait(&siib);
-        wait(&siii);
-        write('b');
-        signal(&siic);
-    }
-}
-
-void *startPC() {
-    wait(&si);
-    while (true) {
-        wait(&siic);
-        wait(&siii);
-        write('c');
-        signal(&siib);
-    }
-}
-
-void *startC() {
-    while(true) {
-        wait(&sC);
-        write(stdin, buffer+br, 1);
-        br = (br + 1) % 1024;
-    }
 }

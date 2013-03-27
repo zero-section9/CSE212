@@ -4,4 +4,4 @@
 typedef struct {
     int start;
     int end;
-} FreeNode
+} FreeNode;
