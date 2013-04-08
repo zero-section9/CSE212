@@ -1,25 +1,25 @@
-#include<sys/wait.h>
-#include<stdio.h>
-#include<unistd.h>
-#include<stdlib.h>
-#include<string.h>
+#include <sys/wait.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 
 int main(int argc, const char *argv[]) {
   int pfd[2];
   pid_t pid;
-  
+
   if(argc != 2) {
     fprintf(stderr, "Usage: %s <string>\n", argv[0]);
     exit(EXIT_FAILURE);
   }
-  
+
   if(pipe(pfd) == -1) {
     perror("pipe");
     exit(EXIT_FAILURE);
   }
-  
+
   pid = fork();
-  
+
   if(pid != 0) {
     char buf;
     close(pfd[1]);

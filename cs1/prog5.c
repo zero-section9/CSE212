@@ -1,7 +1,7 @@
-#include<stdio.h>
-#include<string.h>
-#include<sys/types.h>
-#include<sys/wait.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #define BUF_SIZE  100
 
@@ -32,7 +32,7 @@ void father(pid_t gpid) {
         son(gpid, fpid);
     } else {
         fprintf(stderr, "Error creating son: %d\n", pid);
-        
+
     }
 }
 
@@ -55,7 +55,7 @@ int main(void) {
         father(gpid);
     } else {
         fprintf(stderr, "Error creating father: %d \n", pid);
-        
+
     }
     return 0;
 }

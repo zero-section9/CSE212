@@ -1,4 +1,4 @@
-#include<stdio.h>
+#include <stdio.h>
 
 int main() {
   printf("The type of cpu is:\n==========================================\n");
