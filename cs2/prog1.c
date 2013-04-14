@@ -31,11 +31,9 @@ char buf[BUF_SIZE];
 int ri = 0;
 int wi = 0;
 
-/*
-void waitSemaphore(Semaphore *s) {
-    if (s->count >= 0) {
+/*void waitSemaphore(Semaphore *s) {
+    if (s->count >= 0)
         s->count--;
-    }
     while(s->count < 0);
 }
 void signalSemaphore(Semaphore *s) {

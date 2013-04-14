@@ -46,3 +46,5 @@ build/buildinfo.properties
 build/config/buildinfo.properties
 
 a.out
+cse212/
+cse212.xcodeproj
