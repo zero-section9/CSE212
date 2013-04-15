@@ -19,12 +19,14 @@ int safeSeq[100];
 
 void init() {
     int i, j;
-    for (i = 0; i < rn; ++i) {
+    for (i = 0; i < rn; i++) {
         work[i] = available[i];
-        for (i = 0; i < pn; ++i) {
-            processes[j].need[i] = processes[j].max[i] - processes[j].allocation[i];
-            processes[j].finished = false;
+    }
+    for (i = 0; i < pn; i++) {
+        for (j = 0; j < rn; j++) {
+            processes[i].need[j] = processes[i].max[j] - processes[i].allocation[j];
         }
+        processes[i].finished = false;
     }
 }
 
@@ -50,16 +52,17 @@ bool isSafe() {
     int i, c;
     bool dsie;
     c = 0;
-    while(true) {
+    do {
         dsie = false;
-        for (i = 0; i < pn; ++i) {
+        for (i = 0; i < pn; i++) {
             if (!processes[i].finished && canProcessRun(i)) {
                 dsie = true;
                 safeSeq[c++] = i;
                 runProcess(i);
             }
         }
-    }
+    } while (dsie);
+    return (c == pn);
 }
 
 int main(int argc, const char *argv[]) {
@@ -68,7 +71,7 @@ int main(int argc, const char *argv[]) {
     init();
 
     if (isSafe()) {
-        printf("The Process is in Safe State.\n");
+        printf("The System is in Safe State.\n");
         printf("Safe Seqence: <p%d", safeSeq[0]);
         for (i = 1; i < pn; i++) {
             printf(", p%d\n", safeSeq[i]);

@@ -67,10 +67,8 @@ int getLRU(int sj) {
         f = false;
         for (j = sj-1; !f && j >= 0; j--) {
             if (string[j] == page[i]){
-                if (j >= p) {
-                    f = true;
-                } else {
-                    f = true;
+                f = true;
+                if (j < p) {
                     lru = i;
                     p = j;
                 }
@@ -83,20 +81,20 @@ int getLRU(int sj) {
     return lru;
 }
 
-pageLRU() {
-    int i, j;
+void pageLRU() {
+    int i;
     i = 0;
     hits = 0;
-    for (j = 0; j < sl; j++) {
-        if (isInPage(string[j])) {
+    for (i = 0; i < sl; i++) {
+        if (isInPage(string[i])) {
             hits++;
-            setHit(j);
+            setHit(i);
         } else {
-            page[getLRU(j)] = string[j];
-            setMiss(j);
+            page[getLRU(i)] = string[i];
+            setMiss(i);
         }
     }
-    setEnd(j);
+    setEnd(i);
 }
 
 int getOptimal(int sj) {
@@ -106,10 +104,8 @@ int getOptimal(int sj) {
         f = false;
         for (j = sj+1; !f && j < sl; j++) {
             if (string[j] == page[i]){
-                if (j <= p) {
-                    f = true;
-                } else {
-                    f = true;
+                f = true;
+                if (j > p) {
                     optimal = i;
                     p = j;
                 }
@@ -122,20 +118,20 @@ int getOptimal(int sj) {
     return optimal;
 }
 
-pageOptimal() {
-    int i, j;
+void pageOptimal() {
+    int i;
     i = 0;
     hits = 0;
-    for (j = 0; j < sl; j++) {
-        if (isInPage(string[j])) {
+    for (i = 0; i < sl; i++) {
+        if (isInPage(string[i])) {
             hits++;
-            setHit(j);
+            setHit(i);
         } else {
-            page[getOptimal(j)] = string[j];
-            setMiss(j);
+            page[getOptimal(i)] = string[i];
+            setMiss(i);
         }
     }
-    setEnd(j);
+    setEnd(i);
 }
 
 void printRecords() {
