@@ -69,6 +69,36 @@ int main(int argc, const char *argv[]) {
     int i;
 
     init();
+    printf("Enter the Number of Resources: ");
+    scanf("%d", &rn);
+    printf("Enter the Number of Instances of each Resource:\n");
+    for(i = 0; i < rn; i++) {
+        printf("Resource %d: ", i);
+        scanf("%d", &availableResources[i]);
+    }
+
+    printf("Enter the Number of Processes: ");
+    scanf("%d", &pn);
+    printf("\n");
+    printf("Enter the details of Current Snap Shot:\n");
+    printf("=======================================\n");
+    printf("Allocated Resources:\n");
+    for(i = 0; i < pn; i++) {
+        printf("\nProcess %d:\n", i);
+        processes[i].completed = false;
+        for(j = 0; j < rn; j++) {
+            printf("  Resource %d: ", j);
+            scanf("%d", &processes[i].allocated[j]);
+        }
+    }
+    printf("Maximum Required Resources:\n");
+    for(i = 0; i < pn; i++) {
+        printf("\nProcess %d:\n", i);
+        for(j = 0; j < rn; j++) {
+            printf("  Resource %d: ", j);
+            scanf("%d", &processes[i].max[j]);
+        }
+    }
 
     if (isSafe()) {
         printf("The System is in Safe State.\n");

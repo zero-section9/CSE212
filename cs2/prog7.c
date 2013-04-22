@@ -154,27 +154,44 @@ int main(int argc, const char *argv[]) {
     scanf("%s", string);
     sl = strlen(string);
 
-    for (i = 0; i < pn; i++) {
+    pageSize = 3;
+    for(i = 0; i < pageSize; i++) {
         page[i] = ' ';
     }
-    pageFIFO();
-    printf("\nFIFO Paging:\n");
-    printRecords();
 
-    for (i = 0; i < pn; i++) {
-        page[i] = ' ';
+    printf("Select a Page Replacement Algorithm:\n");
+    printf("1: FIFO\n");
+    printf("2: LRU\n");
+    printf("3: Optimal\n");
+    printf("0: Exit\n");
+    printf("\nChoice: ");
+    int ch;
+    scanf("%d", &ch);
+    switch(ch) {
+        case 1:
+            pageFIFO();
+            break;
+        case 2:
+            pageLRU();
+            break;
+        case 3:
+            pageOptimal();
+            break;
+        case 0:
+            break;
+        default:
+            printf("Invalid Option!");
+            break;
     }
-    pageLRU();
-    printf("\nLRU Paging:\n");
-    printRecords();
 
-    for (i = 0; i < pn; i++) {
-        page[i] = ' ';
+    printf("\n%s\n", str);
+    for(i = 0; i < sl; i++) {
+        printf("-");
     }
-    pageOptimal();
-    printf("\nOptimal Paging:\n");
-    printRecords();
-
+    printf("\n");
+    for(i = 0; i < pageSize; i++) {
+        printf("%s\n", pageSS[i]);
+    }
     printf("\n");
     return 0;
 }
