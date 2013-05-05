@@ -15,81 +15,81 @@ typedef struct AllocNode {
     struct AllocNode *next;
 } AllocNode;
 
-FreeNode *freeNodes;
-AllocNode *allocNodes;
+FreeNode *freeNodes = NULL;
+AllocNode *allocNodes = NULL;
 
-void addAllocNodes(AllocNode *an, int num) {
-    int i;
-    AllocNode **n = &allocNodes;
-    while(n != NULL) {
-        n = &((*n)->next);
+void addFreeNode(int start, int end) {
+    FreeNode *nfn = NULL;
+    FreeNode **fns = &freeNodes;
+
+    while ((*fns != NULL) && ((*fns)->end < start)) {
+        if ((*fns)->end == (start - 1)) {
+            nfn = *fns;
+            nfn-> end = end;
+            break;
+        }
+        fns = &((*fns)->next);
     }
-    (*n) = an;
 
-    for (i = 1; i < num; i++) {
-        (*n)->next = &an[i];
-        n = &((*n)->next);
+    if (nfn == NULL) {
+        nfn = (FreeNode*) malloc(sizeof(FreeNode));
+        nfn->start = start;
+        nfn->end = end;
+        nfn->next = *fns;
+        (*fns) = nfn;
     }
-}
 
-void addAllocNode(AllocNode *an) {
-    return addAllocNodes(an, 1);
-}
-
-void addFreeNodes(FreeNode *fn, int num) {
-    int i;
-    FreeNode **n = &freeNodes;
-    while(n != NULL) {
-        n = &((*n)->next);
-    }
-    (*n) = fn;
-
-    for (i = 1; i < num; i++) {
-        (*n)->next = &fn[i];
-        n = &((*n)->next);
+    if (nfn->next != NULL && (nfn->end + 1) == nfn->next->start) {
+        nfn->end = nfn->next->end;
+        FreeNode *fntbd = nfn->next;
+        nfn->next = nfn->next->next;
+        free(fntbd);
     }
 }
 
-void addFreeNode(FreeNode *fn) {
-    return addFreeNodes(fn, 1);
+AllocNode *addAllocNode(int pid, int start, int end) {
+    AllocNode** n = &allocNodes;
+    AllocNode* nal = NULL;
+
+    while((*n != NULL) && (((*n)->end < start))) {
+        if(((*n)->end + 1) == start) {
+            nal = *n;
+            nal->end = end;
+            break;
+        }
+        n = &((*n)->next);
+    }
+
+    if (nal == NULL) {
+        nal = (AllocNode*) malloc(sizeof(AllocNode));
+        nal->start = start;
+        nal->end = end;
+        nal->pid = pid;
+        nal->next = *n;
+        (*n) = nal;
+    }
+
+    if (nal->next != NULL &&(nal->end + 1) == nal->next->start) {
+        nal->end = nal->next->end;
+        AllocNode *antbd = nal->next;
+        nal->next = nal->next->next;
+        free(antbd);
+    }
+
+    return nal;
 }
 
 int finProcess(int pid) {
     AllocNode **n = &allocNodes;
-    
+
     while(*n != NULL) {
         if ((*n)->pid == pid) {
-            FreeNode *nfn = NULL;
-             
-            FreeNode **fn = &freeNodes;
-            while ((*fn == NULL) && ((*fn)->start > nfn->end)) {
-                if ((*fn)->end == ((*n)->start - 1)) {
-                    nfn = *fn;
-                    nfn-> end = (*n)->end;
-                    break;
-                }
-                fn = &((*fn)->next);
-            }
-            
-            if (nfn == NULL) {
-                nfn = (FreeNode*) malloc(sizeof(FreeNode));
-                nfn->start = (*n)->start;
-                nfn->end = (*n)->end;
-                nfn->next = *fn;
-                (*fn) = nfn;
-            }
+            addFreeNode((*n)->start, (*n)->end);
 
             AllocNode *antbf = *n;
             (*n) = (*n)->next;
             free(antbf);
-            
-            if ((nfn->end + 1) == nfn->next->start) {
-                nfn->end = nfn->next->end;
-                FreeNode *fntbd = nfn->next;
-                nfn->next = nfn->next->next;
-                free(fntbd);
-            }
-            
+
             return 0;
         }
         n = &((*n)->next);
@@ -98,35 +98,8 @@ int finProcess(int pid) {
 }
 
 AllocNode *allocMem(FreeNode **fn, int size, int pid) {
-    AllocNode** n = &allocNodes;
-    
-    AllocNode* nal = NULL;
+    AllocNode* nal = addAllocNode(pid, (*fn)->start, (*fn)->start + size - 1);
 
-    while((*n != NULL) && (((*n)->end < (*fn)->start))) {
-        if(((*n)->end + 1) == (*fn)->start) {
-            nal = *n; 
-            nal->end = (*fn)->end;
-            break;
-        }
-        n = &((*n)->next);
-    }
-    
-    if (nal == NULL) {
-        nal = (AllocNode*) malloc(sizeof(AllocNode));
-        nal->start = (*fn)->start;
-        nal->end = (*fn)->start + size - 1;
-        nal->pid = pid;
-        nal->next = *n;
-        (*n) = nal;
-    }
-    
-    if ((nal->end + 1) == nal->next->start) {
-        nal->end = nal->next->end;
-        AllocNode *antbd = nal->next;
-        nal->next = nal->next->next;
-        free(antbd);
-    }
-    
     int fns = (*fn)->end - (*fn)->start + 1;
     if (fns == size) {
         FreeNode *fntbd = *fn;
@@ -135,9 +108,9 @@ AllocNode *allocMem(FreeNode **fn, int size, int pid) {
     } else if (fns > size) {
         (*fn)->start = (*fn)->start + size;
     } else {
-        
+        return NULL;
     }
-    
+
     return nal;
 }
 
@@ -157,11 +130,12 @@ AllocNode *allocBestFit(int size, int pid) {
     int bfs = INT_MAX;
 
     while (*fn != NULL) {
-       int cs = (*fn)->end - (*fn)->start + 1;
-       if (size <= cs && cs < bfs) { 
-           bfn = fn;
-           bfs = cs;
-       }
+        int cs = (*fn)->end - (*fn)->start + 1;
+        if (size <= cs && cs < bfs) {
+            bfn = fn;
+            bfs = cs;
+        }
+        fn = &((*fn)->next);
     }
 
     return (bfn != NULL) ? allocMem(bfn, size, pid) : NULL;
@@ -173,11 +147,12 @@ AllocNode *allocWorstFit(int size, int pid) {
     int wfs = 0;
 
     while (*fn != NULL) {
-       int cs = (*fn)->end - (*fn)->start + 1;
-       if (size <= cs && cs > wfs) {
-           wfn = fn;
-           wfs = cs;
-       }
+        int cs = (*fn)->end - (*fn)->start + 1;
+        if (size <= cs && cs > wfs) {
+            wfn = fn;
+            wfs = cs;
+        }
+        fn = &((*fn)->next);
     }
 
     return (wfn != NULL) ? allocMem(wfn, size, pid) : NULL;
@@ -186,12 +161,17 @@ AllocNode *allocWorstFit(int size, int pid) {
 #define MEM_SIZE_VAL 1024
 #define MEM_CW_VAL 50
 
+#define ALLOC_CHAR '#'//219
+#define FREE_CHAR ' '
+#define UNKNOWN_CHAR '~'//176
+#define END_CHAR '$'
+
 void printMemView(int ch, int mi, int end) {
     for (; mi <= end; mi++) {
-        putchar(ch);
         if(mi % MEM_CW_VAL == 0) {
-            printf("\n");
+            printf("\n%5d ",MEM_CW_VAL * (mi/MEM_CW_VAL));
         }
+        printf("%c",ch);
     }
 }
 
@@ -204,49 +184,63 @@ void printMemory() {
         printf("%-10d",i);
     }
     printf("\n      ");
-    char tick[] = {195, 169, 169, 169, 169, 169, 169, 169, 169, 169, 0};
+    //    char tick[] = {195, 169, 169, 169, 169, 169, 169, 169, 169, 169, 0};
+    char tick[] = "|---------";
     for (i = 0; i < MEM_CW_VAL; i += 10) {
         printf("%s", tick);
     }
     while (mi < MEM_SIZE_VAL) {
-        if (mi == an->start) {
-            printMemView(219, mi, an->end);
+        if (an != NULL && mi == an->start) {
+            printMemView(ALLOC_CHAR, mi, an->end);
             mi = an->end + 1;
             an = an->next;
-        } else if (mi == fn->start) {
-            printMemView(' ', mi, fn->end);
+        } else if (fn != NULL && mi == fn->start) {
+            printMemView(FREE_CHAR, mi, fn->end);
             mi = fn->end + 1;
             fn = fn ->next;
         } else {
-            printMemView(176, mi, mi);
+            printMemView(UNKNOWN_CHAR, mi, mi);
             mi++;
         }
     }
+    printf("%c\n",END_CHAR);
 }
 
 int main() {
-    FreeNode fns[] = {
-        { 100,  199, NULL},
-        { 345,  449, NULL},
-        { 660,  670, NULL},
-        { 910,  929, NULL},
-        { 990, 1023, NULL}
+    int fns[][2] = {
+        //Start,  End, Next
+        { 100,  199},
+        { 345,  449},
+        { 660,  670},
+        { 910,  929},
+        { 990, 1023}
     };
     int fnn = 5;
-    AllocNode ans[] = {
-        {  12,    0,   99, NULL},
-        { 107,  200,  344, NULL},
-        { 333,  450,  659, NULL},
-        { 671,  671,  909, NULL},
-        {1221,  930,  989, NULL}
+
+    int ans[][3] = {
+        //PID,Start,  End, Next
+        {  12,    0,   99},
+        { 107,  200,  344},
+        { 333,  450,  659},
+        { 671,  671,  909},
+        {1221,  930,  989}
     };
     int ann = 5;
-    
-    addFreeNodes(fns, fnn);
-    addAllocNodes(ans, ann);
+
+    int i;
+    for (i = 0; i < fnn; i++) {
+        addFreeNode(fns[i][0], fns[i][1]);
+    }
+    for (i = 0; i < ann; i++) {
+        addAllocNode(ans[i][0], ans[i][1], ans[i][2]);
+    }
     
     printMemory();
-
+    allocWorstFit(10, 191);
+    printMemory();
+    finProcess(333);
+    printMemory();
+    
     printf("\n");
     return 0;
 }
