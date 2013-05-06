@@ -178,6 +178,7 @@ int main(int argc, const char *argv[]) {
             pageOptimal();
             break;
         case 0:
+            exit(0);
             break;
         default:
             printf("Invalid Option!");

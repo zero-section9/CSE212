@@ -48,8 +48,8 @@ void addFreeNode(int start, int end) {
 }
 
 AllocNode *addAllocNode(int pid, int start, int end) {
-    AllocNode** n = &allocNodes;
-    AllocNode* nal = NULL;
+    AllocNode **n = &allocNodes;
+    AllocNode *nal = NULL;
 
     while((*n != NULL) && (((*n)->end < start))) {
         if(((*n)->end + 1) == start) {
@@ -98,17 +98,17 @@ int finProcess(int pid) {
 }
 
 AllocNode *allocMem(FreeNode **fn, int size, int pid) {
-    AllocNode* nal = addAllocNode(pid, (*fn)->start, (*fn)->start + size - 1);
+    AllocNode *nal = NULL;
 
     int fns = (*fn)->end - (*fn)->start + 1;
     if (fns == size) {
+        nal = addAllocNode(pid, (*fn)->start, (*fn)->start + size - 1);
         FreeNode *fntbd = *fn;
         (*fn) = (*fn)->next;
         free(fntbd);
     } else if (fns > size) {
+        nal = addAllocNode(pid, (*fn)->start, (*fn)->start + size - 1);
         (*fn)->start = (*fn)->start + size;
-    } else {
-        return NULL;
     }
 
     return nal;
@@ -126,7 +126,7 @@ AllocNode *allocFirstFit(int size, int pid) {
 
 AllocNode *allocBestFit(int size, int pid) {
     FreeNode **fn = &freeNodes;
-    FreeNode **bfn =  NULL;
+    FreeNode **bfn = NULL;
     int bfs = INT_MAX;
 
     while (*fn != NULL) {
